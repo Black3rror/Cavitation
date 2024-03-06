@@ -1,0 +1,10 @@
+# testing
+pytest >= 7.4.3
+coverage
+
+# linting
+ruff >= 0.1.3
+
+# type checking
+mypy
+types-tensorflow

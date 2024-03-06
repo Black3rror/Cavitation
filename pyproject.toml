@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cavitation"
+version = "0.0.1"
+description = "A study on the cavitation dataset."
+authors = [
+  { name = "Amin", email = "your@email.com" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.11"
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.setuptools]
+packages = ["cavitation"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = {file = ['requirements_dev.txt']}
+test = {file = ['requirements_test.txt']}
+
+[tool.ruff]
+line-length = 120
