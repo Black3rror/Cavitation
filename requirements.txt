@@ -1,3 +1,6 @@
 tensorflow
 wandb
 hydra-core
+tqdm
+pandas
+openpyxl
