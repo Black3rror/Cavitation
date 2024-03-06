@@ -4,3 +4,4 @@ hydra-core
 tqdm
 pandas
 openpyxl
+matplotlib
