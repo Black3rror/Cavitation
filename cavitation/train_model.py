@@ -1,7 +1,6 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
-
 import datetime
+import logging
+import os
 from io import StringIO
 
 import hydra
@@ -87,4 +86,8 @@ def main(cfg):
 
 
 if __name__ == "__main__":
+    # Info: environment variable 'TF_CPP_MIN_LOG_LEVEL' has been set to '2' in the Makefile `setup_project` target
+    logging.getLogger('tensorflow').setLevel(logging.ERROR)
+    os.environ["WANDB_SILENT"] = "true"
+
     main()

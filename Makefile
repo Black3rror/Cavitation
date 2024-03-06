@@ -10,8 +10,11 @@
 
 PROJECT_NAME = cavitation
 PROJECT_ROOT = $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
 PYTHON_VERSION = 3.11
 PYTHON_INTERPRETER = python
+
+TF_LOG_LEVEL = 2
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -24,16 +27,22 @@ setup_project:
 		conda activate $(PROJECT_NAME) && \
 		conda env config vars set PROJECT_NAME="$(PROJECT_NAME)" -n $(PROJECT_NAME) && \
 		conda env config vars set PROJECT_ROOT="$(PROJECT_ROOT)" -n $(PROJECT_NAME) && \
+		conda env config vars set TF_CPP_MIN_LOG_LEVEL="$(TF_LOG_LEVEL)" -n $(PROJECT_NAME) && \
 		python -m pip install -U pip setuptools wheel && \
 		python -m pip install -r requirements.txt && \
 		python -m pip install -e . && \
 		python -m pip install .["dev"] && \
-		python -m pip install .["test"] && \
-		git init && \
+		python -m pip install .["test"]
+	@echo "Recommended: Run 'make setup_git' to set up git."
+	@echo "Setup completed. Please run 'conda activate $(PROJECT_NAME)' to activate the environment."
+
+setup_git:
+	@echo "Setting up git..."
+	@git init && \
 		git add . && \
 		git commit -m "Init cookiecutter project" && \
 		pre-commit install
-	@echo "Setup completed."
+	@echo "Git setup completed."
 
 ## Set up python interpreter environment
 create_environment:
@@ -55,8 +64,14 @@ test_requirements: requirements
 
 ## Delete all compiled Python files
 clean:
-	find . -type f -name "*.py[co]" -delete
-	find . -type d -name "__pycache__" -delete
+ifeq ($(OS),Windows_NT)
+	@for /r %%i in (*.pyc) do if exist "%%i" del /q "%%i"
+	@for /r %%i in (*.pyo) do if exist "%%i" del /q "%%i"
+	@for /d /r %%d in (__pycache__) do if exist "%%d" rmdir /s /q "%%d"
+else
+	@find . -type f -name "*.py[co]" -delete
+	@find . -type d -name "__pycache__" -delete
+endif
 
 ## Remove python interpreter environment
 remove_environment:
