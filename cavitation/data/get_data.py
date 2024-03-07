@@ -38,6 +38,7 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
 
     if not cached:
         rng = np.random.RandomState(random_seed)
+        window_size_original = window_size
 
         # collect the data
         dataset_m = []       # metadata
@@ -48,6 +49,8 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
 
             pump_metadata = _read_pump_metadata(pump[0], pump[1], exclude_partial_data=True)
             pump_records_filenames = pump_metadata['Filename'].to_numpy()
+            pump_records_Q = pump_metadata['Q'].to_numpy()
+            pump_records_H = pump_metadata['H'].to_numpy()
             pump_records_CF = pump_metadata['CF'].to_numpy()
 
             pump_dataset_m = []
@@ -56,7 +59,7 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
             for j in range(len(pump_records_filenames)):
                 pump_record = _read_pump_record(pump[0], pump[1], pump_records_filenames[j])
 
-                if window_size is None:
+                if window_size_original is None:
                     window_size = len(pump_record)
 
                 for k in range(0, len(pump_record)-window_size+1, int(window_size/2)):
@@ -64,6 +67,8 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
                                         "record_filename": pump_records_filenames[j],
                                         "window_start": k,
                                         "window_end": k+window_size,
+                                        "Q": pump_records_Q[j],
+                                        "H": pump_records_H[j],
                                         "CF": pump_records_CF[j]})
                     pump_dataset_x.append(np.array(pump_record[k:k+window_size]))
                     pump_dataset_y.append(pump_records_CF[j])
@@ -83,7 +88,7 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
         elif data_type == "fft":
             # If we don't partition the dataset, we may crash the kernel
             dataset_x = np.array_split(dataset_x, 20)
-            for i in tqdm(range(len(dataset_x)), desc="Calculating FFT of dataset_x", colour='green', leave=False):
+            for i in tqdm(range(len(dataset_x)), desc="Calculating FFT of data", colour='green', leave=False):
                 dataset_x[i] = np.fft.fft(dataset_x[i], axis=1)
                 dataset_x[i] = np.abs(dataset_x[i])
                 dataset_x[i] = dataset_x[i][:, :int(window_size/2)].astype('float32')  # convert to float32 to save memory, otherwise we may crash the kernel
@@ -193,7 +198,7 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
             raise ValueError(f"Invalid test_sep_strategy: {test_sep_strategy}")
 
         os.makedirs(os.path.join(dataset_root_dir, "processed"), exist_ok=True)
-        OmegaConf.save(OmegaConf.create({"data_type": data_type, "problem_type": problem_type, "window_size": window_size, "test_sep_strategy": test_sep_strategy, "test_ratio": test_ratio, "flat_features": flat_features, "random_seed": random_seed}), os.path.join(dataset_root_dir, "processed/cache_info.yaml"))
+        OmegaConf.save(OmegaConf.create({"data_type": data_type, "problem_type": problem_type, "window_size": window_size_original, "test_sep_strategy": test_sep_strategy, "test_ratio": test_ratio, "flat_features": flat_features, "random_seed": random_seed}), os.path.join(dataset_root_dir, "processed/cache_info.yaml"))
         np.savez_compressed(os.path.join(dataset_root_dir, "processed/dataset.npz"), train_m=train_m, train_x=train_x, train_y=train_y, test_m=test_m, test_x=test_x, test_y=test_y)
 
     else:

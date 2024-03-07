@@ -1,5 +1,6 @@
 # project specific
-data/
+/data/
+/cavitation/data/figures/
 
 # docs
 docs/site/

@@ -149,7 +149,7 @@ def main(cfg):
             if i == len(pumps)-1:
                 ax.set_xlabel("Time (s)")
 
-    print("Saving the figures in the directory: {}".format(cfg.figures_save_dir))
+    logger.info("Saving the figures in the directory: {}".format(cfg.figures_save_dir))
 
     os.makedirs(cfg.figures_save_dir, exist_ok=True)
     fig1.savefig(os.path.join(cfg.figures_save_dir, "predictions_summary.png"), dpi = 100)
