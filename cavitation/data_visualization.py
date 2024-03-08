@@ -1,3 +1,4 @@
+import datetime
 import os
 
 import hydra
@@ -28,9 +29,11 @@ def get_spectrogram(data, window_size=1024, overlap=512, fs=freq):
     return frequencies, times, spectrogram
 
 
-@hydra.main(config_path="configs", config_name="config", version_base=None)
+@hydra.main(config_path="configs", config_name="data_visualization_config", version_base=None)
 def main(cfg):
     logger = get_logger(__name__)
+
+    cfg.time_tag = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     # problem_type doesn't matter, but we fix it to "regression" for reproducibility
     # test_sep_strategy is set to None in order to have samples of any kind in the trainset
@@ -88,6 +91,8 @@ def main(cfg):
                     plt.xlabel("Frequency (Hz)")
 
     logger.info("Saving the experiment info and figures in the directory: {}".format(cfg.save_dir))
+    os.makedirs(cfg.save_dir, exist_ok=True)
+
     experiment_info = {"Description": ""}
     experiment_info["data_type"] = cfg.data_type
     experiment_info["window_size"] = cfg.window_size
@@ -100,7 +105,6 @@ def main(cfg):
         yaml.dump(experiment_info, f, indent=4, sort_keys=False)
 
     fig_name = "record_samples.png"
-    os.makedirs(cfg.save_dir, exist_ok=True)
     plt.savefig(os.path.join(cfg.save_dir, fig_name), dpi=300)
 
     plt.close("all")    # close all figure windows (not showing anything)

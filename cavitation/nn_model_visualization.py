@@ -27,7 +27,7 @@ def regression_accuracy(target, output):
     return tf.reduce_mean(tf.cast(tf.math.equal(target_binary, output_binary), tf.float32))
 
 
-@hydra.main(config_path="configs", config_name="config", version_base=None)
+@hydra.main(config_path="configs", config_name="nn_model_visualization_config", version_base=None)
 def main(cfg):
     logger = get_logger(__name__)
 

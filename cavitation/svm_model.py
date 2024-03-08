@@ -32,7 +32,7 @@ def _get_stats(record, n_partitions=None):
     return record_extra
 
 
-@hydra.main(config_path="configs", config_name="config", version_base=None)
+@hydra.main(config_path="configs", config_name="svm_model_config", version_base=None)
 def main(cfg):
     logger = get_logger(__name__)
 
@@ -69,9 +69,9 @@ def main(cfg):
     for pump in pumps:
         pump_train_indices = [i for i in range(len(train_m)) if train_m[i]['pump'] == pump]
         pump_test_indices = [i for i in range(len(test_m)) if test_m[i]['pump'] == pump]
-        pump_train_x = train_x_main[pump_train_indices]
+        pump_train_x = train_x[pump_train_indices]
         pump_train_y = train_y[pump_train_indices]
-        pump_test_x = test_x_main[pump_test_indices]
+        pump_test_x = test_x[pump_test_indices]
         pump_test_y = test_y[pump_test_indices]
 
         # normalize train_x and test_x
