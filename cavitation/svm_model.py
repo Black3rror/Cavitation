@@ -5,6 +5,7 @@ import os
 import hydra
 import numpy as np
 import yaml
+from omegaconf import OmegaConf
 from sklearn import svm
 
 from cavitation.data.get_data import get_data
@@ -15,26 +16,27 @@ pumps = [(5, 3), (5, 18), (5, 36), (32, 3), (64, 2), (95, 2), (125, 2)]    # (fl
 freq = 48000
 
 
-def _get_stats(record, percentile=True, energy=True, std=True, n_partitions=None):
-    record_extra = []
+def _get_stats(data_x_main, percentile=True, energy=True, std=True, n_partitions=None):
+    # data_x_main has shape (n_samples, n_features)
+    data_x_extra = []   # it will take the shape (n_extra_features)(n_samples)
     if percentile:
-        record_extra.append(np.percentile(np.abs(record), 90))
+        data_x_extra.append(np.percentile(np.abs(data_x_main), 90, axis=1))
     if energy:
-        record_extra.append(np.sum(np.square(record)))
+        data_x_extra.append(np.sum(np.square(data_x_main), axis=1))
     if std:
-        record_extra.append(np.std(record))
+        data_x_extra.append(np.std(data_x_main, axis=1))
 
     if n_partitions is not None:
-        record_parts = np.array_split(record, n_partitions)
+        data_parts = np.array_split(data_x_main, n_partitions, axis=1)  # shape: (n_partitions)(n_samples, n_features/n_partitions)
         if percentile:
-            record_extra += [np.percentile(t, 90) for t in record_parts]
+            data_x_extra += [np.percentile(t, 90, axis=1) for t in data_parts]
         if energy:
-            record_extra += [np.sum(np.square(t)) for t in record_parts]
+            data_x_extra += [np.sum(np.square(t), axis=1) for t in data_parts]
         if std:
-            record_extra += [np.std(t) for t in record_parts]
+            data_x_extra += [np.std(t, axis=1) for t in data_parts]
 
-    record_extra = np.array(record_extra)
-    return record_extra
+    data_x_extra = np.array(data_x_extra).T     # shape: (n_samples, n_extra_features)
+    return data_x_extra
 
 
 @hydra.main(config_path="configs", config_name="svm_model_config", version_base=None)
@@ -44,56 +46,25 @@ def main(cfg):
     cfg.time_tag = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     (train_m, train_x_main, train_y), (test_m, test_x_main, test_y) = get_data(cfg.data_type, "classification", cfg.window_size, cfg.test_sep_strategy, cfg.test_ratio, flat_features=True, normalize=False, random_seed=cfg.random_seed)
-    train_x, test_x = None, None
+    logger.info("Data has been loaded")
 
-    # add pump stats to train_x and test_x
-    for pump in pumps:
-        pump_train_indices = [i for i in range(len(train_m)) if train_m[i]['pump'] == pump]
-        pump_test_indices = [i for i in range(len(test_m)) if test_m[i]['pump'] == pump]
-        pump_train_x = train_x_main[pump_train_indices]
-        pump_test_x = test_x_main[pump_test_indices]
+    # calculate pump stats and construct train_x and test_x
+    n_partitions = cfg.n_fft_partitions if cfg.data_type == "fft" else None
+    include_percentile = True if "percentile" in cfg.data_include else False
+    include_energy = True if "energy" in cfg.data_include else False
+    include_std = True if "std" in cfg.data_include else False
 
-        # add stats to train_x and test_x
-        for i in range(len(pump_train_x)):
-            pump_record = pump_train_x[i]
+    train_x_extra = _get_stats(train_x_main, include_percentile, include_energy, include_std, n_partitions)
+    test_x_extra = _get_stats(test_x_main, include_percentile, include_energy, include_std, n_partitions)
 
-            n_partitions = cfg.n_fft_partitions if cfg.data_type == "fft" else None
-            include_percentile = True if "percentile" in cfg.data_include else False
-            include_energy = True if "energy" in cfg.data_include else False
-            include_std = True if "std" in cfg.data_include else False
-            pump_x_extra = _get_stats(pump_record, include_percentile, include_energy, include_std, n_partitions)
+    if "raw" in cfg.data_include:
+        train_x = np.concatenate((train_x_main, train_x_extra), axis=1)
+        test_x = np.concatenate((test_x_main, test_x_extra), axis=1)
+    else:
+        train_x = train_x_extra
+        test_x = test_x_extra
 
-            if train_x is None:     # create for the first time
-                data_size = len(pump_x_extra)
-                if "raw" in cfg.data_include:
-                    data_size += pump_train_x.shape[1]
-                train_x = np.zeros((train_x_main.shape[0], data_size))
-
-            if "raw" in cfg.data_include:
-                train_x[pump_train_indices[i]] = np.concatenate((pump_train_x[i], pump_x_extra))
-            else:
-                train_x[pump_train_indices[i]] = pump_x_extra
-
-        for i in range(len(pump_test_x)):
-            pump_record = pump_test_x[i]
-
-            n_partitions = cfg.n_fft_partitions if cfg.data_type == "fft" else None
-            include_percentile = True if "percentile" in cfg.data_include else False
-            include_energy = True if "energy" in cfg.data_include else False
-            include_std = True if "std" in cfg.data_include else False
-            pump_x_extra = _get_stats(pump_record, include_percentile, include_energy, include_std, n_partitions)
-
-            if test_x is None:      # create for the first time
-                data_size = len(pump_x_extra)
-                if "raw" in cfg.data_include:
-                    data_size += pump_test_x.shape[1]
-                test_x = np.zeros((test_x_main.shape[0], data_size))
-
-            if "raw" in cfg.data_include:
-                test_x[pump_test_indices[i]] = np.concatenate((pump_test_x[i], pump_x_extra))
-            else:
-                test_x[pump_test_indices[i]] = pump_x_extra
-
+    logger.info("")
     pumps_accuracy = {}
     for pump in pumps:
         pump_train_indices = [i for i in range(len(train_m)) if train_m[i]['pump'] == pump]
@@ -117,24 +88,25 @@ def main(cfg):
         pump_train_accuracy = model.score(pump_train_x, pump_train_y)
         pump_test_accuracy = model.score(pump_test_x, pump_test_y)
         logger.info("Pump {}-{}: Train accuracy: {:.6f}, Test accuracy: {:.6f}".format(pump[0], pump[1], pump_train_accuracy, pump_test_accuracy))
-        pumps_accuracy[pump] = {"train_accuracy": pump_train_accuracy, "test_accuracy": pump_test_accuracy}
+        pumps_accuracy["{}-{}".format(pump[0], pump[1])] = {"train_accuracy": pump_train_accuracy, "test_accuracy": pump_test_accuracy}
 
-    average_train_accuracy = np.mean([pumps_accuracy[pump]["train_accuracy"] for pump in pumps])
-    average_test_accuracy = np.mean([pumps_accuracy[pump]["test_accuracy"] for pump in pumps])
+    average_train_accuracy = np.mean([pumps_accuracy["{}-{}".format(pump[0], pump[1])]["train_accuracy"] for pump in pumps])
+    average_test_accuracy = np.mean([pumps_accuracy["{}-{}".format(pump[0], pump[1])]["test_accuracy"] for pump in pumps])
     logger.info("")
     logger.info("Average train accuracy: {:.6f}, Average test accuracy: {:.6f}".format(average_train_accuracy, average_test_accuracy))
 
+    data_include = OmegaConf.to_container(cfg.data_include, resolve=True)   # otherwise, saving it in the yaml file will raise an error/bug (infinite recursion)
     experiment_info = {"Description": ""}
     experiment_info["data_type"] = cfg.data_type
     experiment_info["window_size"] = cfg.window_size
     experiment_info["test_sep_strategy"] = cfg.test_sep_strategy
     experiment_info["test_ratio"] = cfg.test_ratio
     experiment_info["random_seed"] = cfg.random_seed
-    experiment_info["data_include"] = cfg.data_include
+    experiment_info["data_include"] = data_include
     experiment_info["n_fft_partitions"] = cfg.n_fft_partitions
     experiment_info["pumps_accuracy"] = pumps_accuracy
-    experiment_info["average_train_accuracy"] = average_train_accuracy
-    experiment_info["average_test_accuracy"] = average_test_accuracy
+    experiment_info["average_train_accuracy"] = float(average_train_accuracy)
+    experiment_info["average_test_accuracy"] = float(average_test_accuracy)
     experiment_info["train_data_1st_record"] = train_m[0]
     experiment_info["test_data_1st_record"] = test_m[0]
 
