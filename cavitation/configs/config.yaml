@@ -14,3 +14,5 @@ figures_save_dir: ${nn_model_dir}/figures
 
 # svm model config
 n_fft_partitions: 50
+time_tag: null
+experiment_save_dir: results/svm/${time_tag}

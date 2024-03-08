@@ -1,8 +1,10 @@
+import datetime
 import logging
 import os
 
 import hydra
 import numpy as np
+import yaml
 from sklearn import svm
 
 from cavitation.data.get_data import get_data
@@ -34,7 +36,9 @@ def _get_stats(record, n_partitions=None):
 def main(cfg):
     logger = get_logger(__name__)
 
-    if cfg.problem_type == "classification":
+    cfg.time_tag = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    if cfg.problem_type != "classification":
         logger.warning("SVM model can only do classification. The problem type has been set to 'classification' automatically.")
         cfg.problem_type = "classification"
 
@@ -96,6 +100,25 @@ def main(cfg):
 
     logger.info("")
     logger.info("Average train accuracy: {:.6f}, Average test accuracy: {:.6f}".format(np.mean([pumps_accuracy[pump]["train_accuracy"] for pump in pumps]), np.mean([pumps_accuracy[pump]["test_accuracy"] for pump in pumps])))
+
+    experiment_info = {"Description": ""}
+    experiment_info["data_type"] = cfg.data_type
+    experiment_info["problem_type"] = cfg.problem_type
+    experiment_info["window_size"] = cfg.window_size
+    experiment_info["test_sep_strategy"] = cfg.test_sep_strategy
+    experiment_info["test_ratio"] = cfg.test_ratio
+    experiment_info["flat_features"] = cfg.flat_features
+    experiment_info["random_seed"] = cfg.random_seed
+    experiment_info["n_fft_partitions"] = cfg.n_fft_partitions
+    experiment_info["pumps_accuracy"] = pumps_accuracy
+    experiment_info["train_data_1st_record"] = train_m[0]
+    experiment_info["test_data_1st_record"] = test_m[0]
+
+    logger.info("Saving the experiment info in the directory: {}".format(cfg.experiment_save_dir))
+    os.makedirs(cfg.experiment_save_dir, exist_ok=True)
+    yaml.Dumper.ignore_aliases = lambda *args : True
+    with open(os.path.join(cfg.experiment_save_dir, "experiment_info.yaml"), 'w') as f:
+        yaml.dump(experiment_info, f, indent=4, sort_keys=False)
 
 
 if __name__ == "__main__":
