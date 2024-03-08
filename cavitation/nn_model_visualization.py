@@ -31,7 +31,7 @@ def regression_accuracy(target, output):
 def main(cfg):
     logger = get_logger(__name__)
 
-    (train_m, train_x, train_y), (test_m, test_x, test_y) = get_data(cfg.data_type, cfg.problem_type, cfg.window_size, cfg.test_sep_strategy, cfg.test_ratio, cfg.flat_features, cfg.random_seed)
+    (train_m, train_x, train_y), (test_m, test_x, test_y) = get_data(cfg.data_type, cfg.problem_type, cfg.window_size, cfg.test_sep_strategy, cfg.test_ratio, cfg.flat_features, normalize=True, random_seed=cfg.random_seed)
     model = tf.keras.models.load_model(cfg.nn_model_path, custom_objects={"regression_loss": regression_loss, "regression_accuracy": regression_accuracy})
 
     # model summary

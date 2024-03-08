@@ -31,7 +31,7 @@ def get_spectrogram(data, window_size=1024, overlap=512, fs=freq):
 def main(cfg):
     logger = get_logger(__name__)
 
-    (train_m, train_x, train_y), (test_m, test_x, test_y) = get_data(cfg.data_type, cfg.problem_type, cfg.window_size, cfg.test_sep_strategy, cfg.test_ratio, cfg.flat_features, cfg.random_seed)
+    (train_m, train_x, train_y), (test_m, test_x, test_y) = get_data(cfg.data_type, cfg.problem_type, cfg.window_size, cfg.test_sep_strategy, cfg.test_ratio, cfg.flat_features, normalize=False, random_seed=cfg.random_seed)
 
     # sort the data based on the pump and then the CF
     train_m, train_x, train_y = zip(*sorted(zip(train_m, train_x, train_y), key=lambda x: (x[0]['pump'], x[0]['CF'])))

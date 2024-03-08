@@ -13,7 +13,7 @@ pumps_metadata_sheet_name = "NPSH points"
 pumps_record_file_path = os.path.join(dataset_root_dir, "raw/CR{pump_flow}-{pump_stages}/{record_file_name}")
 
 
-def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio, flat_features=True, random_seed=None):
+def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio, flat_features=True, normalize=True, random_seed=None):
     """
     Loads the dataset.
 
@@ -24,6 +24,7 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
         test_sep_strategy (str): The test set separation strategy. One of [None, "data", "record", "pump"].
         test_ratio (float): The ratio of the test set.
         flat_features (bool): If True, the features are flattened.
+        normalize (bool): If True, the features are normalized.
         random_seed (int): The random seed. If None, the random seed is not set.
 
     Returns:
@@ -105,7 +106,8 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
         else:
             raise ValueError(f"Invalid problem_type: {problem_type}")
 
-        dataset_x = (dataset_x - np.mean(dataset_x)) / np.std(dataset_x)
+        if normalize:
+            dataset_x = (dataset_x - np.mean(dataset_x)) / np.std(dataset_x)
 
         if flat_features:
             pass
