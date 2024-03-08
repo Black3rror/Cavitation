@@ -15,18 +15,23 @@ pumps = [(5, 3), (5, 18), (5, 36), (32, 3), (64, 2), (95, 2), (125, 2)]    # (fl
 freq = 48000
 
 
-def _get_stats(record, n_partitions=None):
-    record_90_percentile = np.percentile(np.abs(record), 90)
-    record_energy = np.sum(np.square(record))
-    record_std = np.std(record)
-    record_extra = [record_90_percentile, record_energy, record_std]
+def _get_stats(record, percentile=True, energy=True, std=True, n_partitions=None):
+    record_extra = []
+    if percentile:
+        record_extra.append(np.percentile(np.abs(record), 90))
+    if energy:
+        record_extra.append(np.sum(np.square(record)))
+    if std:
+        record_extra.append(np.std(record))
 
     if n_partitions is not None:
         record_parts = np.array_split(record, n_partitions)
-        record_parts_90_percentile = [np.percentile(t, 90) for t in record_parts]
-        record_parts_energy = [np.sum(np.square(t)) for t in record_parts]
-        record_parts_std = [np.std(t) for t in record_parts]
-        record_extra += record_parts_90_percentile + record_parts_energy + record_parts_std
+        if percentile:
+            record_extra += [np.percentile(t, 90) for t in record_parts]
+        if energy:
+            record_extra += [np.sum(np.square(t)) for t in record_parts]
+        if std:
+            record_extra += [np.std(t) for t in record_parts]
 
     record_extra = np.array(record_extra)
     return record_extra
@@ -51,19 +56,43 @@ def main(cfg):
         # add stats to train_x and test_x
         for i in range(len(pump_train_x)):
             pump_record = pump_train_x[i]
+
             n_partitions = cfg.n_fft_partitions if cfg.data_type == "fft" else None
-            pump_x_extra = _get_stats(pump_record, n_partitions)
+            include_percentile = True if "percentile" in cfg.data_include else False
+            include_energy = True if "energy" in cfg.data_include else False
+            include_std = True if "std" in cfg.data_include else False
+            pump_x_extra = _get_stats(pump_record, include_percentile, include_energy, include_std, n_partitions)
+
             if train_x is None:     # create for the first time
-                train_x = np.zeros((train_x_main.shape[0], train_x_main.shape[1] + len(pump_x_extra)))
-            train_x[pump_train_indices[i]] = np.concatenate((pump_train_x[i], pump_x_extra))
+                data_size = len(pump_x_extra)
+                if "raw" in cfg.data_include:
+                    data_size += pump_train_x.shape[1]
+                train_x = np.zeros((train_x_main.shape[0], data_size))
+
+            if "raw" in cfg.data_include:
+                train_x[pump_train_indices[i]] = np.concatenate((pump_train_x[i], pump_x_extra))
+            else:
+                train_x[pump_train_indices[i]] = pump_x_extra
 
         for i in range(len(pump_test_x)):
             pump_record = pump_test_x[i]
+
             n_partitions = cfg.n_fft_partitions if cfg.data_type == "fft" else None
-            pump_x_extra = _get_stats(pump_record, n_partitions)
+            include_percentile = True if "percentile" in cfg.data_include else False
+            include_energy = True if "energy" in cfg.data_include else False
+            include_std = True if "std" in cfg.data_include else False
+            pump_x_extra = _get_stats(pump_record, include_percentile, include_energy, include_std, n_partitions)
+
             if test_x is None:      # create for the first time
-                test_x = np.zeros((test_x_main.shape[0], test_x_main.shape[1] + len(pump_x_extra)))
-            test_x[pump_test_indices[i]] = np.concatenate((pump_test_x[i], pump_x_extra))
+                data_size = len(pump_x_extra)
+                if "raw" in cfg.data_include:
+                    data_size += pump_test_x.shape[1]
+                test_x = np.zeros((test_x_main.shape[0], data_size))
+
+            if "raw" in cfg.data_include:
+                test_x[pump_test_indices[i]] = np.concatenate((pump_test_x[i], pump_x_extra))
+            else:
+                test_x[pump_test_indices[i]] = pump_x_extra
 
     pumps_accuracy = {}
     for pump in pumps:
@@ -101,6 +130,7 @@ def main(cfg):
     experiment_info["test_sep_strategy"] = cfg.test_sep_strategy
     experiment_info["test_ratio"] = cfg.test_ratio
     experiment_info["random_seed"] = cfg.random_seed
+    experiment_info["data_include"] = cfg.data_include
     experiment_info["n_fft_partitions"] = cfg.n_fft_partitions
     experiment_info["pumps_accuracy"] = pumps_accuracy
     experiment_info["average_train_accuracy"] = average_train_accuracy
