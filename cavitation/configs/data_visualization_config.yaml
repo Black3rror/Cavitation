@@ -1,0 +1,9 @@
+# data loading config
+data_type: "fft"
+window_size: 65536
+random_seed: 42
+
+time_tag: null    # placeholder (will be filled by the script)
+
+n_sample_records: 10  # number of records for each pump to be used for visualization
+save_dir: results/data/${time_tag}

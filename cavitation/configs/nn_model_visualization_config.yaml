@@ -1,0 +1,13 @@
+# data loading config (keep it the same as the configs for the related model generated in the Benchmarking project)
+data_type: "fft"
+problem_type: "regression"
+window_size: 65536
+test_sep_strategy: "record"
+test_ratio: 0.2
+flat_features: False
+random_seed: 42
+
+model_dir: C:/Users/moam/OneDrive - Danmarks Tekniske Universitet/.D/University/PhD/Projects/Benchmarking/saved_models/TensorFlow/CNN/2024-03-06_18-01-02
+model_path: ${model_dir}/tf/model/keras_format/model.keras
+
+figures_save_dir: ${model_dir}/figures

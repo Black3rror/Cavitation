@@ -4,6 +4,7 @@ import hydra
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal as sp
+import yaml
 
 from cavitation.data.get_data import get_data
 from cavitation.logger.easy_logger import get_logger
@@ -31,7 +32,10 @@ def get_spectrogram(data, window_size=1024, overlap=512, fs=freq):
 def main(cfg):
     logger = get_logger(__name__)
 
-    (train_m, train_x, train_y), (test_m, test_x, test_y) = get_data(cfg.data_type, cfg.problem_type, cfg.window_size, cfg.test_sep_strategy, cfg.test_ratio, cfg.flat_features, normalize=False, random_seed=cfg.random_seed)
+    # problem_type doesn't matter, but we fix it to "regression" for reproducibility
+    # test_sep_strategy is set to None in order to have samples of any kind in the trainset
+    # test_ratio is set to 0.01 in order to have a very small testset
+    (train_m, train_x, train_y), (test_m, test_x, test_y) = get_data(cfg.data_type, "regression", cfg.window_size, None, 0.01, flat_features=True, normalize=False, random_seed=cfg.random_seed)
 
     # sort the data based on the pump and then the CF
     train_m, train_x, train_y = zip(*sorted(zip(train_m, train_x, train_y), key=lambda x: (x[0]['pump'], x[0]['CF'])))
@@ -83,13 +87,21 @@ def main(cfg):
                 if i == len(pumps)-1:
                     plt.xlabel("Frequency (Hz)")
 
-    logger.info("saving figure")
-    if cfg.data_type == "acceleration":
-        fig_name = "pumps_acc.png"
-    elif cfg.data_type == "fft":
-        fig_name = "pumps_fft.png"
-    os.makedirs(os.path.join(cfg.figures_save_dir, cfg.data_type), exist_ok=True)
-    plt.savefig(os.path.join(cfg.figures_save_dir, cfg.data_type, fig_name), dpi=300)
+    logger.info("Saving the experiment info and figures in the directory: {}".format(cfg.save_dir))
+    experiment_info = {"Description": ""}
+    experiment_info["data_type"] = cfg.data_type
+    experiment_info["window_size"] = cfg.window_size
+    experiment_info["random_seed"] = cfg.random_seed
+    experiment_info["train_data_1st_record"] = train_m[0]
+    experiment_info["test_data_1st_record"] = test_m[0]
+
+    yaml.Dumper.ignore_aliases = lambda *args : True
+    with open(os.path.join(cfg.save_dir, "experiment_info.yaml"), 'w') as f:
+        yaml.dump(experiment_info, f, indent=4, sort_keys=False)
+
+    fig_name = "record_samples.png"
+    os.makedirs(cfg.save_dir, exist_ok=True)
+    plt.savefig(os.path.join(cfg.save_dir, fig_name), dpi=300)
 
     plt.close("all")    # close all figure windows (not showing anything)
 
