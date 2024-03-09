@@ -38,7 +38,6 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
             cached = True
 
     if not cached:
-        rng = np.random.RandomState(random_seed)
         window_size_original = window_size
 
         # collect the data
@@ -119,6 +118,7 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
         dataset_y = dataset_y.astype('float32')
 
         # shuffle the data
+        rng = np.random.RandomState(random_seed)
         shuffled_indices = rng.permutation(len(dataset_x))
         dataset_m = dataset_m[shuffled_indices]
         dataset_x = dataset_x[shuffled_indices]
@@ -164,7 +164,10 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
             for pump in pumps:
                 pump_indices = [i for i in range(len(dataset_m)) if dataset_m[i]['pump'] == pump]
                 pump_filenames = np.unique([dataset_m[i]['record_filename'] for i in pump_indices])
+                # sort the filenames to diseffect the change of window size in separation of train and test sets
+                pump_filenames = np.sort(pump_filenames)
                 # select `test_ratio` of `pump_records_filenames` for the test set
+                rng = np.random.RandomState(random_seed)
                 pump_filenames_test = rng.choice(pump_filenames, size=round(len(pump_filenames)*test_ratio), replace=False)
                 pump_filenames_train = [filename for filename in pump_filenames if filename not in pump_filenames_test]
                 pump_train_indices = [i for i in pump_indices if dataset_m[i]['record_filename'] in pump_filenames_train]
@@ -184,7 +187,8 @@ def get_data(data_type, problem_type, window_size, test_sep_strategy, test_ratio
 
         elif test_sep_strategy == "pump":
             # randomly select `test_ratio` of pumps for the test set
-            pumps_test_chosen = np.random.choice(len(pumps), size=round(len(pumps)*test_ratio), replace=False)
+            rng = np.random.RandomState(random_seed)
+            pumps_test_chosen = rng.choice(len(pumps), size=round(len(pumps)*test_ratio), replace=False)
             pumps_test = [pumps[i] for i in pumps_test_chosen]
             pumps_train = [i for i in pumps if i not in pumps_test]
             pump_train_indices = [i for i in range(len(dataset_m)) if dataset_m[i]['pump'] in pumps_train]
