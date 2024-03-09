@@ -74,35 +74,20 @@ def main(cfg):
     logger.info("Pump stats have been calculated")
 
     logger.info("")
-    pumps_accuracy = {}
-    for pump in pumps:
-        pump_train_indices = [i for i in range(len(train_m)) if train_m[i]['pump'] == pump]
-        pump_test_indices = [i for i in range(len(test_m)) if test_m[i]['pump'] == pump]
-        pump_train_x = train_x[pump_train_indices]
-        pump_train_y = train_y[pump_train_indices]
-        pump_test_x = test_x[pump_test_indices]
-        pump_test_y = test_y[pump_test_indices]
+    # normalize train_x and test_x
+    train_x_mean = np.mean(train_x)
+    train_x_std = np.std(train_x)
+    train_x = (train_x - train_x_mean) / train_x_std
+    test_x = (test_x - train_x_mean) / train_x_std
 
-        # normalize train_x and test_x
-        pump_train_x_mean = np.mean(pump_train_x)
-        pump_train_x_std = np.std(pump_train_x)
-        pump_train_x = (pump_train_x - pump_train_x_mean) / pump_train_x_std
-        pump_test_x = (pump_test_x - pump_train_x_mean) / pump_train_x_std
+    # train the SVM model
+    model = svm.SVC(kernel="linear")
+    model.fit(train_x, train_y)
 
-        # train the SVM model
-        model = svm.SVC(kernel="linear")
-        model.fit(pump_train_x, pump_train_y)
-
-        # evaluate the model
-        pump_train_accuracy = model.score(pump_train_x, pump_train_y)
-        pump_test_accuracy = model.score(pump_test_x, pump_test_y)
-        logger.info("Pump {}-{}: Train accuracy: {:.6f}, Test accuracy: {:.6f}".format(pump[0], pump[1], pump_train_accuracy, pump_test_accuracy))
-        pumps_accuracy["{}-{}".format(pump[0], pump[1])] = {"train_accuracy": pump_train_accuracy, "test_accuracy": pump_test_accuracy}
-
-    average_train_accuracy = np.mean([pumps_accuracy["{}-{}".format(pump[0], pump[1])]["train_accuracy"] for pump in pumps])
-    average_test_accuracy = np.mean([pumps_accuracy["{}-{}".format(pump[0], pump[1])]["test_accuracy"] for pump in pumps])
-    logger.info("-" * 66)
-    logger.info("Average train accuracy: {:.6f}, Average test accuracy: {:.6f}".format(average_train_accuracy, average_test_accuracy))
+    # evaluate the model
+    train_accuracy = model.score(train_x, train_y)
+    test_accuracy = model.score(test_x, test_y)
+    logger.info("Train accuracy: {:.6f}, Test accuracy: {:.6f}".format(train_accuracy, test_accuracy))
     logger.info("")
 
     data_include = OmegaConf.to_container(cfg.data_include, resolve=True)   # otherwise, saving it in the yaml file will raise an error/bug (infinite recursion)
@@ -116,9 +101,8 @@ def main(cfg):
     experiment_info["random_seed"] = cfg.random_seed
     experiment_info["data_include"] = data_include
     experiment_info["n_fft_partitions"] = cfg.n_fft_partitions
-    experiment_info["pumps_accuracy"] = pumps_accuracy
-    experiment_info["average_train_accuracy"] = float(average_train_accuracy)
-    experiment_info["average_test_accuracy"] = float(average_test_accuracy)
+    experiment_info["train_accuracy"] = train_accuracy
+    experiment_info["test_accuracy"] = test_accuracy
     experiment_info["train_data_1st_record"] = train_m[0]
     experiment_info["test_data_1st_record"] = test_m[0]
 
