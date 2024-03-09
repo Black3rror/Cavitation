@@ -35,7 +35,10 @@ def _get_stats(data_x_main, percentile=True, energy=True, std=True, n_partitions
         if std:
             data_x_extra += [np.std(t, axis=1) for t in data_parts]
 
-    data_x_extra = np.array(data_x_extra).T     # shape: (n_samples, n_extra_features)
+    if data_x_extra == []:
+        data_x_extra = None
+    else:
+        data_x_extra = np.array(data_x_extra).T     # shape: (n_samples, n_extra_features)
     return data_x_extra
 
 
@@ -45,10 +48,11 @@ def main(cfg):
 
     cfg.time_tag = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
+    logger.info("Loading data ...")
     (train_m, train_x_main, train_y), (test_m, test_x_main, test_y) = get_data(cfg.data_type, "classification", cfg.window_size, cfg.test_sep_strategy, cfg.test_ratio, flat_features=True, normalize=False, random_seed=cfg.random_seed)
     logger.info("Data has been loaded")
 
-    # calculate pump stats and construct train_x and test_x
+    logger.info("Calculating pump stats ...")
     n_partitions = cfg.n_fft_partitions if cfg.data_type == "fft" else None
     include_percentile = True if "percentile" in cfg.data_include else False
     include_energy = True if "energy" in cfg.data_include else False
@@ -58,11 +62,16 @@ def main(cfg):
     test_x_extra = _get_stats(test_x_main, include_percentile, include_energy, include_std, n_partitions)
 
     if "raw" in cfg.data_include:
-        train_x = np.concatenate((train_x_main, train_x_extra), axis=1)
-        test_x = np.concatenate((test_x_main, test_x_extra), axis=1)
+        if train_x_extra is not None:
+            train_x = np.concatenate((train_x_main, train_x_extra), axis=1)
+            test_x = np.concatenate((test_x_main, test_x_extra), axis=1)
+        else:
+            train_x = train_x_main
+            test_x = test_x_main
     else:
         train_x = train_x_extra
         test_x = test_x_extra
+    logger.info("Pump stats have been calculated")
 
     logger.info("")
     pumps_accuracy = {}
@@ -92,11 +101,14 @@ def main(cfg):
 
     average_train_accuracy = np.mean([pumps_accuracy["{}-{}".format(pump[0], pump[1])]["train_accuracy"] for pump in pumps])
     average_test_accuracy = np.mean([pumps_accuracy["{}-{}".format(pump[0], pump[1])]["test_accuracy"] for pump in pumps])
-    logger.info("")
+    logger.info("-" * 66)
     logger.info("Average train accuracy: {:.6f}, Average test accuracy: {:.6f}".format(average_train_accuracy, average_test_accuracy))
+    logger.info("")
 
     data_include = OmegaConf.to_container(cfg.data_include, resolve=True)   # otherwise, saving it in the yaml file will raise an error/bug (infinite recursion)
     experiment_info = {"Description": ""}
+    if "name" in cfg:
+        experiment_info["Description"] = cfg.name
     experiment_info["data_type"] = cfg.data_type
     experiment_info["window_size"] = cfg.window_size
     experiment_info["test_sep_strategy"] = cfg.test_sep_strategy
