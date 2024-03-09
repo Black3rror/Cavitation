@@ -63,7 +63,7 @@ experiments = [
     # different partition counts
     {
         "name": "Experiment 3.1 - data partitions",
-        "n_fft_partitions": None,
+        "n_fft_partitions": "null",
     },
     {
         "name": "Experiment 3.2 - data partitions",
