@@ -90,7 +90,7 @@ def main(cfg):
         pump_test_x = (pump_test_x - pump_train_x_mean) / pump_train_x_std
 
         # train the SVM model
-        model = svm.SVC(kernel="linear")
+        model = svm.LinearSVC(dual=False)
         model.fit(pump_train_x, pump_train_y)
 
         # evaluate the model
