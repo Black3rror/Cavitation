@@ -22,6 +22,7 @@ TF_LOG_LEVEL = 2
 
 ## Fully set up the project
 setup_project:
+	@echo "In case of any errors, please execute the commands in the Makefile manually."
 	@echo "Creating and setting up the environment..."
 	@conda create --name $(PROJECT_NAME) python=$(PYTHON_VERSION) --no-default-packages -y && \
 		conda activate $(PROJECT_NAME) && \
@@ -35,14 +36,6 @@ setup_project:
 		python -m pip install .["test"]
 	@echo "Recommended: Run 'make setup_git' to set up git."
 	@echo "Setup completed. Please run 'conda activate $(PROJECT_NAME)' to activate the environment."
-
-setup_git:
-	@echo "Setting up git..."
-	@git init && \
-		git add . && \
-		git commit -m "Init cookiecutter project" && \
-		pre-commit install
-	@echo "Git setup completed."
 
 ## Set up python interpreter environment
 create_environment:
@@ -82,6 +75,18 @@ remove_environment:
 #################################################################################
 
 # put project specific rules here
+
+## Run the SVM experiment
+run_svm_experiment:
+	$(PYTHON_INTERPRETER) -m cavitation.svm_experiments
+
+## Visualize some data samples and the data stats
+visualize_data:
+	$(PYTHON_INTERPRETER) -m cavitation.data_visualization
+
+## Visualize the performance of the NN model
+visualize_nn_model:
+	$(PYTHON_INTERPRETER) -m cavitation.nn_model_visualization
 
 #################################################################################
 # Self Documenting Commands                                                     #
