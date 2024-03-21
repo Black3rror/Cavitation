@@ -49,7 +49,7 @@ The directory structure of the project looks like this:
 │
 ├── tests                <- Test files
 │
-├── cavitation  <- Source code for use in this project.
+├── cavitation           <- Source code for use in this project.
 │   │
 │   ├── __init__.py      <- Makes folder a Python module
 |   |
@@ -60,14 +60,17 @@ The directory structure of the project looks like this:
 │   │
 │   ├── data
 │   │   └── get_data.py  <- Load the data
+|   |
+│   ├── logger
+│   │   └── easy_logger.py <- An easy-to-use logger
 │   │
-│   ├── data_visualization.py  <- Visualizing the data and its statistics
+│   ├── data_visualization.py <- Visualizing the data and its statistics
 |   |
-│   ├── nn_model_visualization.py  <- Visualizing the performance of an existing neural network model
+│   ├── nn_model_visualization.py <- Visualizing the performance of an existing neural network model
 |   |
-│   ├── svm_experiments.py  <- Script for running the SVM experiments
+│   ├── svm_experiments.py <- Script for running the SVM experiments
 |   |
-│   └── svm_model.py  <- SVM model implementations, training and prediction
+│   └── svm_model.py     <- SVM model implementations, training and prediction
 │
 └── LICENSE              <- Open-source license if one is chosen
 ```
