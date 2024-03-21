@@ -1,0 +1,12 @@
+# data loading config
+data_type: "fft"
+window_size: 4096
+test_sep_strategy: "record"
+test_ratio: 0.2
+random_seed: 42
+
+time_tag: null    # placeholder (will be filled by the script)
+
+data_include: ["percentile", "energy", "std"]    # data to be included in the input of the model. Can be any combination of "raw", "percentile", "energy", "std"
+n_fft_partitions: 50
+save_dir: results/svm/${time_tag}
