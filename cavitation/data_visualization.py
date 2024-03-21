@@ -40,6 +40,50 @@ def main(cfg):
     # test_ratio is set to 0.01 in order to have a very small testset
     (train_m, train_x, train_y), (test_m, test_x, test_y) = get_data(cfg.data_type, "regression", cfg.window_size, None, 0.01, flat_features=True, normalize=False, random_seed=cfg.random_seed)
 
+    # 1. save the distribution of records related to pumps
+    # combine the train and test data
+    dataset_m = np.concatenate((train_m, test_m))
+
+    # keep one sample of each record
+    unique_indices = np.unique([record_m["record_filename"] for record_m in dataset_m], return_index=True)[1]
+    dataset_m = dataset_m[unique_indices]
+
+    # plot a bar chart of how many records are there for each pump
+    pump_counts = [0] * len(pumps)
+    for record_m in dataset_m:
+        for i, pump in enumerate(pumps):
+            if pump == record_m["pump"]:
+                pump_counts[i] += 1
+                break
+
+    plt.clf()
+    plt.figure(figsize=(6, 4))
+    plt.bar(range(len(pumps)), pump_counts, edgecolor="black", width=0.4, color="skyblue", zorder=3)
+    plt.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.7, zorder=0)
+    plt.title("Number of records for each pump")
+    plt.xticks(range(len(pumps)), ["{}-{}".format(flow, stages) for flow, stages in pumps], rotation=45)
+    plt.xlabel("Pump (flow-stages)")
+    plt.ylabel("Number of records")
+    plt.tight_layout()
+
+    logger.info("Saving the experiment info and figures in the directory: {}".format(cfg.save_dir))
+    os.makedirs(cfg.save_dir, exist_ok=True)
+    plt.savefig(os.path.join(cfg.save_dir, "pump_counts.png"), dpi=300)
+
+    # 2. save the distribution of CFs for the whole dataset
+    log_cfs = [np.log(record_m['CF']) for record_m in dataset_m]
+    plt.clf()
+    plt.figure(figsize=(6, 4))
+    plt.hist(log_cfs, bins=20, edgecolor="black", color="skyblue", zorder=3)
+    plt.grid(axis="y", linestyle="--", linewidth=0.5, alpha=0.7, zorder=0)
+    plt.title("Distribution of CFs")
+    plt.xlabel("log(CF)")
+    plt.ylabel("Number of records")
+    plt.tight_layout()
+
+    plt.savefig(os.path.join(cfg.save_dir, "cf_distribution.png"), dpi=300)
+
+    # 3. save some samples of the records for each pump
     # sort the data based on the pump and then the CF
     train_m, train_x, train_y = zip(*sorted(zip(train_m, train_x, train_y), key=lambda x: (x[0]['pump'], x[0]['CF'])))
 
@@ -90,9 +134,6 @@ def main(cfg):
                 if i == len(pumps)-1:
                     plt.xlabel("Frequency (Hz)")
 
-    logger.info("Saving the experiment info and figures in the directory: {}".format(cfg.save_dir))
-    os.makedirs(cfg.save_dir, exist_ok=True)
-
     experiment_info = {"Description": ""}
     experiment_info["data_type"] = cfg.data_type
     experiment_info["window_size"] = cfg.window_size
@@ -104,8 +145,7 @@ def main(cfg):
     with open(os.path.join(cfg.save_dir, "experiment_info.yaml"), 'w') as f:
         yaml.dump(experiment_info, f, indent=4, sort_keys=False)
 
-    fig_name = "record_samples.png"
-    plt.savefig(os.path.join(cfg.save_dir, fig_name), dpi=300)
+    plt.savefig(os.path.join(cfg.save_dir, "record_samples.png"), dpi=300)
 
     plt.close("all")    # close all figure windows (not showing anything)
 
