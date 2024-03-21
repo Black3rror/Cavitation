@@ -32,19 +32,19 @@ The directory structure of the project looks like this:
 ```txt
 
 ├── Makefile             <- Makefile with convenience commands like `make setup_project` or `make requirements`
-|
+│
 ├── README.md            <- The top-level README for developers using this project.
-|
+│
 ├── .gitignore           <- The gitignore file
-|
+│
 ├── .pre-commit-config.yaml <- Configuration file for pre-commit hooks
 │
 ├── pyproject.toml       <- Project configuration file
 │
 ├── requirements.txt     <- The requirements file for reproducing the analysis environment
-|
+│
 ├── requirements_dev.txt <- The requirements file for reproducing the analysis environment
-|
+│
 ├── requirements_test.txt <- The requirements file for reproducing the analysis environment
 │
 ├── tests                <- Test files
@@ -52,7 +52,7 @@ The directory structure of the project looks like this:
 ├── cavitation           <- Source code for use in this project.
 │   │
 │   ├── __init__.py      <- Makes folder a Python module
-|   |
+│   │
 │   ├── configs          <- Configuration files for the project
 │   │   ├── data_visualization_config.yaml
 │   │   ├── nn_model_visualization_config.yaml
@@ -60,16 +60,16 @@ The directory structure of the project looks like this:
 │   │
 │   ├── data
 │   │   └── get_data.py  <- Load the data
-|   |
+│   │
 │   ├── logger
 │   │   └── easy_logger.py <- An easy-to-use logger
 │   │
 │   ├── data_visualization.py <- Visualizing the data and its statistics
-|   |
+│   │
 │   ├── nn_model_visualization.py <- Visualizing the performance of an existing neural network model
-|   |
+│   │
 │   ├── svm_experiments.py <- Script for running the SVM experiments
-|   |
+│   │
 │   └── svm_model.py     <- SVM model implementations, training and prediction
 │
 └── LICENSE              <- Open-source license if one is chosen

@@ -26,3 +26,12 @@ test = {file = ['requirements_test.txt']}
 
 [tool.ruff]
 line-length = 120
+
+[[tool.mypy.overrides]]
+module = [
+    "sklearn",
+    "sklearn.*",
+    "scipy",
+    "scipy.*",
+]
+ignore_missing_imports = true
